@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 	int tag = 201; // for mpi send
 	int fragments = 0;
 
-	printf("Node %d of %d \n", worldRank, worldSize);
+	
 
 	int aux[m][n];
 
@@ -39,13 +39,13 @@ int main(int argc, char** argv) {
 		// build a and b
 		for (int i = 0; i < m; i++) {
 			for (int j = 0; j < n; j++) {
-				a[i][j] = rand() % 10 + 1; 				
+				a[i][j] = rand() % 3 + 1; 				
 			}
 		}
 
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < p; j++) {
-				b[i][j] = rand() % 10 + 1; 				
+				b[i][j] = rand() % 3 + 1; 				
 			}
 		}
 
@@ -88,25 +88,32 @@ int main(int argc, char** argv) {
 		MPI_Recv(&aux[0][0], maxSize * n, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		
 		 int y = 0;
-
+printf("Node %d of %d \n", worldRank, worldSize);
 		for (int i = 0; i < maxSize && worldRank * (maxSize-1) + i <= m; i++) {
+
+			for(int g = 0; g < n; g++) {
+				printf("%d ", aux[i][g]);		
+			}
+			printf("\n");
 			// multiply aux and b
 			int z = 0; int s = 0;
 			int j = 0;			
 			for (j = 0; j < n ; j++) {
 				for (int z = 0; z < n ; z++) {
-			  		s += aux[i][z] * b[z][maxSize*(worldRank-1)+j];
+s += aux[i][z] * b[z][maxSize*(worldRank-1)+j];					
+//printf("%d(%d,%d) * %d(%d,%d) = ", aux[i][z],i,z, b[z][maxSize*(worldRank-1)+j], z, maxSize*(worldRank-1)+j);
+			  		
 					//printf("%d ", aux[i][j]);
 				}
 				printf("%d ", s);
 				c[maxSize*(worldRank-1)+i][maxSize*(worldRank-1)+j] = s;
 			}
-printf("\n");
+			printf("\n");
 	
 
 		}
-		printf("\n");
-		}
+		printf("\n"); 
+	}
 
 
  	MPI_Finalize();          
@@ -116,8 +123,18 @@ printf("\n");
 	for (int i = 0; i < m; i++) {
 		printf("%d -> ", i);
 		for (int j = 0; j < n; j++) {
+			printf("%d ", a[i][j]);
+		}
+		printf("     ");
+		
+		for (int j = 0; j < n; j++) {
 			printf("%d ", b[i][j]);
-		}		
+		}
+		printf("     ");
+		
+		for (int j = 0; j < n; j++) {
+			printf("%d ", c[i][j]);
+		}
 		printf("\n");
 	}	
 }
