@@ -1,14 +1,14 @@
 #include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
- 
+#include <unistd.h> 
+
 int main(int argc, char** argv)
 {
 	int rank, size;
 	MPI_Request *requestList,requestNull;
 	MPI_Status  status;
 
-	// Start MPI
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -42,6 +42,24 @@ int main(int argc, char** argv)
 			}
 		}
 
+		printf("Given the matrices: \n");
+
+		for (int i = 0; i < m; i++) { 
+			for(int j = 0; j < n; j++) { 
+				printf("%d ", a[i][j]);
+			}
+
+			printf("   ");
+
+			for(int j = 0; j < n; j++) { 
+				printf("%d ", b[i][j]);
+			}
+
+			printf("\n"); 
+		}	
+
+		
+
 		// calculate fragment size of the matrix
 		// x slaves = x fragments of max size N/x 
 		// rows per slave = N / x = maxSize
@@ -74,6 +92,9 @@ int main(int argc, char** argv)
 				z++;
 			}
 
+			printf("Block to multiply to process %d: \n", i);
+			for (int h = 0; h < maxSize; h++) { for(int j = 0; j < n; j++) {printf("%d ", aux[h][j]);} printf("\n"); }	
+			printf("\n");
 			MPI_Isend(&aux, maxSize * n, MPI_INT, i, 0, MPI_COMM_WORLD, &requestNull);
 		}
 
@@ -88,30 +109,22 @@ int main(int argc, char** argv)
 	       MPI_Waitany(size - 1, requestList, &index, &status);
 
 	       // mytodo
-	       for (int i = 0; i < maxSize && index * (maxSize-1) + i <= m; i++) {
+	       for (int i = 0; i < maxSize; i++) {
 	       		for (int j = 0; j < n; j++) {
 	       			c[(index) * maxSize + i][j] = d[i][j];
 	       		}
 	       }
 	    }
 
-	    printf("The result of a x b = \n");
+	    printf("The result of the multiplication if the above matrices: \n");
+
 	    for (int i = 0; i < m; i++) {
-	    	for (int j = 0; j < n; j++) {
-	    		printf("%d ", a[i][j]);
-	    	}
-
-	    	printf("   ");
-	    	for (int j = 0; j < n; j++) {
-	    		printf("%d ", b[i][j]);
-	    	}
-
-	    	printf("   ");
 	    	for (int j = 0; j < n; j++) {
 	    		printf("%d ", c[i][j]);
 	    	}
 	    	printf("\n");
 	    }
+	    printf("\n");printf("\n");printf("\n");
 	} else {
 		MPI_Bcast(&b, n * p, MPI_INT, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&maxSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -119,9 +132,14 @@ int main(int argc, char** argv)
 		int aux[maxSize][n];
 		int d[maxSize][n];
 
+
 	    MPI_Recv(&aux, maxSize * n, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
-		for (int i = 0; i < maxSize && rank * (maxSize-1) + i <= m; i++) {
+	    printf("Received block in process %d: \n", rank);
+	    for (int i = 0; i < maxSize; i++) { for(int j = 0; j < n; j++) {printf("%d ", aux[i][j]);} printf("\n"); }	
+	    printf("\n");
+
+		for (int i = 0; i < maxSize && (rank - 1) * maxSize + i <= m; i++) {
 		    // multiply aux and b
 			int z = 0, s;
 			for (int j = 0; j < n ; j++) {
@@ -135,6 +153,10 @@ int main(int argc, char** argv)
 			}
 		}
 
+		// usleep(500);
+		printf("Sent d to master from %d: \n", rank);
+		// for (int h = 0; h < maxSize && (rank - 1) * maxSize + h <= m; h++) { for(int j = 0; j < n; j++) {printf("%d ", d[h][j]);} printf("\n"); }	
+			
 		MPI_Send(&d, maxSize * n, MPI_INT, 0, 1, MPI_COMM_WORLD);
 	}
 
